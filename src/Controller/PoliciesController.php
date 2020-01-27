@@ -52,12 +52,13 @@ class PoliciesController extends AppController
         $renderFriendly = array();
 
         //new start
-        $packedTags = new TagsCollection;
+        //$packedTags = new TagsCollection;
 
+        $packedTags = $this->Policies->getAllPolicyComponentsForPolicy($policy->id);
         //Get all the tags for the current ID policy - needs to be moved into a helper
-        foreach($policy->policy_components as $policyComponent) {
-            $packedTags->add(new PackedTag($policyComponent->value,$policyComponent->replacement));
-        }
+        //foreach($policy->policy_components as $policyComponent) {
+        //    $packedTags->add(new PackedTag($policyComponent->value,$policyComponent->replacement));
+        //}
 
         $managedTitleText = new ManagedText($policy->title,$packedTags);
         $managedBodyText = new ManagedText($policy->body, $packedTags);
@@ -153,11 +154,6 @@ class PoliciesController extends AppController
         ]);
         if ($this->request->is(['patch', 'post', 'put'])) {
             $policy = $this->Policies->patchEntity($policy, $this->request->getData());
-            
-
-           
-            
-
             
 
 

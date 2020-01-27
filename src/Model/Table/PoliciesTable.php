@@ -54,8 +54,9 @@ class PoliciesTable extends Table
 
         $this->addBehavior('Timestamp');
         
-        //#return
-        $this->addBehavior('PolicyComponents'); //no config passed
+        //Our Custom Behaviours for this table
+        $this->addBehavior('PolicyComponents'); 
+        $this->addBehavior('DataRePacker'); 
 
         $this->belongsTo('Users', [
             'foreignKey' => 'user_id',
@@ -123,9 +124,7 @@ class PoliciesTable extends Table
         return $validator;
     }
 
-    // #note  #wrong The Before Marshall event is triggered before data is saved to the database  
-    // it actually trigged as part of Merging / Creating Entities
-
+    
     public function beforeMarshal(EventInterface $event, ArrayObject $data, ArrayObject $options)
     {
         // #updated #understanding
@@ -137,58 +136,23 @@ class PoliciesTable extends Table
         //
         //  The following Entity Methods Trigger 
         //    newEntity(), newEntities(), patchEntity() or patchEntities():
-        
-        //#note #wrong I think beforeMarshal is called only on data which is patched from the entity
-
+        // The ArrayObject $data object is not the same as the entity, 
         // Tags are being used as general term for anything prefixed, followed by a string without spaces
         // PolicyComponents is the notion that a policy has areas which can be set by variables - defined by dynamic tagging
+        
         $extractedPolicyComponents  = new TagsCollection();
 
-       
         //Passing by reference so we can edit the item
-        foreach($data as $key => &$item) {
+        foreach($data as $key => &$itemByRef) {
             
-            //writing Logic to flatten _ids to actual fields
-            //Check to see if the item is an array of keys
-            $keysShortHandIdentifier = '_ids';
-            $newlyFormattedAssociateData = Array();
-
-            // Move to helper method
-            if(is_array($item)){
-                foreach($item as $associatedRecordKey => &$associatedRecordItem) { 
-                    // compare to the variable, so we can plug in changes if this formating of the array changes later
-                    if(is_array($associatedRecordItem)) {
-                        if ($associatedRecordKey === $keysShortHandIdentifier) {
-                            //we have found a shorthand Array, we need to do something with this
-                            foreach($associatedRecordItem as $shortHandKey) {
-                                // #note Move the keys into new array structure
-                                // old structure was table->_ids->[1,2,3,4]  // which where the ids to update
-                                //
-                                // the new structure is
-                                // table->element->id->value
-                                // this means on update we can pass a mixture of associations and new data to update
-                                $newlyFormattedAssociateData[] = array('id' => $shortHandKey);
-                            }
-                            $item = $newlyFormattedAssociateData;
-                        }
-                    }
-                    else {
-                        // If there are no associated items, then we need to turn this into an array so we can add items later
-                        // #Passing an empty array I think is mostly harmless - but we need to test
-                        if ($associatedRecordKey == $keysShortHandIdentifier) {
-                            $item = array(); 
-                        }
-                    }
-                }
-            }
-            
+            //Repack any ForeignKeys Contained in the Item
+            $this->rePackForeignKeys($itemByRef);
 
             //Lets process the string with Regex and pull out components
-            if(!is_array($item)) {
-                if (is_string($item)) {
+            if(!is_array($itemByRef)) {
+                if (is_string($itemByRef)) {
                     
-                    
-                    $tempManagedText= new ManagedText($item);
+                    $tempManagedText= new ManagedText($itemByRef);
                     $tempManagedText->setPrefix(new TagPrefix('#',true));
                     $extractedPolicyComponents->merge($tempManagedText->getAllTags());
                     
@@ -196,63 +160,27 @@ class PoliciesTable extends Table
             }
         }
 
-        // #wrong #note - the data object is the same data that is stored inside the entity
-        // The $data object is not the same as the entity, so I can either hook generating the data (ideal)
-        // or build the data by hand #note that this would mean the data wouldn't necessarily go through he same verification flow
-        // which would generate a risk
-
-        //This will need to be refactoed into it own helper - here for testing
-        // Note wrapping the boilerplate record creation in __('') so it can be localised
         
-        
+                
+        // ready for refactor
         foreach ($extractedPolicyComponents as $extractedPolicyComponent) {
             
-            //test
-            $recodfrombehaviour = $this->getPolicyComponentByTag($extractedPolicyComponent->getTag());
-            var_dump($recodfrombehaviour);
-            die();
-
-            //check if we have stored this component before #
-            $matchedComponent = $this->PolicyComponents->find('all', [
-                'conditions' => ['value =' => $extractedPolicyComponent->getTag()]
-            ]);
-            $record = $matchedComponent->first();
+            //see if we have a record for this Policy Component
+            $recordId = $this->getPolicyComponentIdByTag($extractedPolicyComponent->getTag());
             
 
-            // Testing the hasAny to see if that faster way to check if record is present
-            // - Need to #return #note need to reseach if CakePHP escapes values here. 
-
-            //Check if the component is new, if so store it, otherwise ignore
-            //depreciated in 2.1!  Removing
-            //$conditions = ['value' => $extractedPolicyComponent];
-            //$this->PolicyComponents->hasAny($conditions))
-
-            if ($record == null){
-            
-                $policyComponent  = $this->PolicyComponents->newEmptyEntity();
-                $policyComponent->name = __('Unnamed - ') . $extractedPolicyComponent->getTag();
-                $policyComponent->description = __('Please describe what this component refers to');
+            if ($recordId == null){
                 
-                // Now defaulting the policy component to the Tag name so it makes the un-edited 
-                // policies cleaner to read and clearer that they need editing
-
-                $policyComponent->replacement = $extractedPolicyComponent->getTag(); 
-                $policyComponent->value = $extractedPolicyComponent->getTag();
-                
-                // Prepare the data to add to the current entity
-                $extractedComponentData = $policyComponent->extract($this->PolicyComponents->getSchema()->columns(), true);
-                
+                $extractedComponentData = $this->createPolicyComponentEnityAndExtractData($extractedPolicyComponent);
+           
                 //Append a new policy component to the array
                 $data['policy_components'][] =  $extractedComponentData;
             } else {
                 // The extracted Tag has all ready beed saved, so we only need to
                 // establish the relationship 
-                $data['policy_components'][] =  array('id' => $record->id);
+                $data['policy_components'][] = array('id' => $recordId);
             }
         }
-
- 
-
     }
 
     /**
