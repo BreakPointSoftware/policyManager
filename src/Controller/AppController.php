@@ -46,24 +46,12 @@ class AppController extends Controller
 
         $this->loadComponent('RequestHandler');
         $this->loadComponent('Flash');
-        
-
-        //Constant for disabling login for debuging perposes
-        //#Learning - deines should not be stored here as it not maintabale and they 
-        // get duplicate calls during unit testing
-        //define("REQUIRE_LOGIN", true);    
-        //define("LEARNING_OUTPUT", false);
 
         //Configure::write is the correct approach for setting globally accessable
         //variables in CakePhp
 
         Configure::write('requireLogin',true);
         Configure::write('learningOutput',false);
-
-        //#GB Learning #Notes
-        //All controlers extend the appController.
-        //The Auth Component at this level, forces the 
-        //users to the Users Controller / Login Action if they are logged out
                 
         if(Configure::read('requireLogin')) {
             $this->loadComponent('Auth', [

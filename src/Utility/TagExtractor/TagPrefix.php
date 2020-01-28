@@ -26,7 +26,7 @@ class TagPrefix
         //return $this->_prefix;
     //}
 
-    public function get() : string 
+    public function get() :?string
     {
         return $this->_prefix;
     }
@@ -47,5 +47,6 @@ class TagPrefix
         } else {
             return false;
         }
+        return false;
     }
 }

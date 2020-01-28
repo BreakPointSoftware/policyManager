@@ -182,7 +182,7 @@ class UsersController extends AppController
 
     //  Logout
     public function logout() {
-        if (REQUIRE_LOGIN) {
+        if (Configure::read('requireLogin')) {
         $this->Flash->error('You are logged out');
         return $this->redirect($this->Auth->logout());
         } 

@@ -29,7 +29,6 @@ class TagsCollection implements IteratorAggregate, Countable
         } else {
             $this->_storedTags[$aTagPacked->getTag()] = $aTagPacked;
         }
-
     }
 
     public function merge(TagsCollection $aPackedTagsToMerge) {
