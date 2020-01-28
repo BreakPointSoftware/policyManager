@@ -5,9 +5,11 @@ use App\Utility\TagExtractor\PackedTag;
 use App\Utility\TagExtractor\TagPrefix;
 
 use Cake\TestSuite\TestCase;
-use phpDocumentor\Reflection\DocBlock\Tag;
+use App\Test\Utility\TestHelpers\HiddenMethodInvokerTrait;
 
 class PackedTagTest extends TestCase {
+
+    use HiddenMethodInvokerTrait;
 
     public function setUp(): void
     {
@@ -37,6 +39,32 @@ class PackedTagTest extends TestCase {
         //We Reject Packed tags without prefixs from the allowed list
         $this->assertEquals(false,$packedTag->isPrefixPresent ( $stringToTest4 ), 'Did not correctly eastablish if a prefix was present');
 
+    }
+
+
+    public function testExtractPrefix() {
+        $packedTag = new PackedTag('#Test');
+        $stringToTest1 = '#WithPrefix';
+        $stringToTest2 = 'WithoutPrfix';
+        $stringToTest3 = '&edgeCase';
+        $stringToTest4 = '"edgeCase';
+        
+        //expect #
+        $prefixToTest = $packedTag->extractPrefix ( $stringToTest1 );
+        $this->assertEquals('#',$prefixToTest->get());
+
+        //expect null
+        $prefixToTest = $packedTag->extractPrefix ( $stringToTest2 );
+        $this->assertEquals(null, $prefixToTest);
+
+        //expect &
+        $prefixToTest = $packedTag->extractPrefix ( $stringToTest3 );
+        $this->assertEquals('&',$prefixToTest->get());
+
+        //We Reject Packed tags without prefixs from the allowed list
+        //expect null
+        $prefixToTest = $packedTag->extractPrefix ( $stringToTest4 );
+        $this->assertEquals(null, $prefixToTest);   
     }
 
     public function testSetReplacement()
@@ -72,6 +100,13 @@ class PackedTagTest extends TestCase {
 
     }
 
+    public function testSanitize() {
+        //Sanitize is 
+        $packedTag = new PackedTag('#TestTag1');
+        $params = [' #thisisaTest '];
+        $output = $this->invokeMethod($packedTag,'sanitize',$params);
+        $this->assertTextEquals('#THISISATEST',$output);
+    }
 }
 
 ?>

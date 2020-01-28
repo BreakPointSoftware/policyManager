@@ -39,24 +39,19 @@ class ManagedText
 
     }
 
-    public function getTagsWithPrefix(TagPrefix $aPrefix) :array 
+    public function getTagsWithPrefix(TagPrefix $aPrefix)  
     {
-        $arrayOfTagsToReturn = array();
+        $arrayOfTagsToReturn = new TagsCollection();
 
-        if($this->_integrity::Invalid) {
-            //rebuild Array
-        } 
-
-        if(!array_key_exists($aPrefix->get(), $this->_prefixedUsed)) 
-        {
-            $this->_prefixedUsed[$aPrefix->get()] = $aPrefix;
-            $this->extractTags($aPrefix);
+        if($this->_storedTagIntegrity == IntegrityEnum::Invalid) {
+            $this->checkAndrebuildPrefixesUsed();
+            $this->checkAndRebuildStoredTags();
         }
 
-        if($this->_integrity::Valid) {
+        if($this->_storedTagIntegrity == IntegrityEnum::Valid) {
             foreach ($this->_storedTags as $tag) {
-                if($tag->getPrefix == $aPrefix) {
-                    array_push($arrayOfTagsToReturn, $tag);
+                if($tag->getPrefix()->get() == $aPrefix->get()) {
+                    $arrayOfTagsToReturn->add($tag);
                 }
             }
             return  $arrayOfTagsToReturn;
