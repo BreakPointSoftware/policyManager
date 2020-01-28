@@ -29,7 +29,7 @@ class PackedTagTest extends TestCase {
     public function testIsPrefixPresent() {
         $packedTag = new PackedTag('#Test');
         $stringToTest1 = '#WithPrefix';
-        $stringToTest2 = 'WithoutPrfix';
+        $stringToTest2 = 'WithoutPrfix'; // testing malformed tags to see if its rejected
         $stringToTest3 = '&edgeCase';
         $stringToTest4 = '"edgeCase';
         

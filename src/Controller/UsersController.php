@@ -146,7 +146,7 @@ class UsersController extends AppController
         ]);
         $record = $matchedPolicies->first();
         if ($record != null) {
-            $this->Flash->error(__('The user still has policies so can not be deleted'));
+            $this->Flash->error(__('The user still has policies so cannot be deleted'));
         } else {
             if ($this->Users->delete($user)) {
                 $this->Flash->success(__('The user has been deleted.'));

@@ -77,6 +77,7 @@ class ManagedText
 
         if($this->_presentationTextIntegrity == IntegrityEnum::Invalid) {
             $this->replaceTags();
+            //This could be extended to do others things with the presentation text
         }
 
         if (count($this->_storedTags) > 0 ) {
